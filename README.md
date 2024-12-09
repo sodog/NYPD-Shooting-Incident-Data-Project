@@ -10,8 +10,11 @@ Downloaded Data from: https://catalog.data.gov/dataset/nypd-shooting-incident-da
 
 # Project Workflow 
 
-1- DOWNLOADING LIBRARIES 
-2- EXTRACTING THE RAW DATA 
-3- ANALYSIS AND PLOTS
+1- DOWNLOADING LIBRARIES  
+
+2- EXTRACTING THE RAW DATA  
+
+3- ANALYSIS AND PLOTS  
+
 4- CONCLUSION
 
