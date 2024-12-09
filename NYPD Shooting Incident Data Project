@@ -1,0 +1,281 @@
+---
+title: "NYPD Shooting Incident Data Project"
+author: "Jules Armel Sodogandji"
+date: "2024-12-09"
+output: pdf_document
+latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## DOWNLOADING LIBRARIES
+```{r}
+# Download packages to be used 
+tinytex::tlmgr_update()
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(caret)
+```
+
+## EXTRACTING THE RAW DATA 
+```{r}
+# Download data
+# Data Source from "https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic/resource/c564b578-fd8a-4005-8365-34150d306cc4"
+
+project_data <- read.csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD")
+head(project_data)
+
+
+# We got 28562 Observations and 21 variables 
+# The Variables represent columns of the oberseved data 
+# We will remove the columns that won't help in our Analysis 
+# We will transform Columns to a more readable data
+
+
+project_datacol <- names(project_data)
+print(project_datacol)
+
+# All COLUMNS 
+# "INCIDENT_KEY" "OCCUR_DATE" "OCCUR_TIME" "BORO" "LOC_OF_OCCUR_DESC"      
+# "PRECINCT" "JURISDICTION_CODE" "LOC_CLASSFCTN_DESC" "LOCATION_DESC" "STATISTICAL_MURDER_FLAG"
+# "PERP_AGE_GROUP" "PERP_SEX" "PERP_RACE" "VIC_AGE_GROUP" "VIC_SEX"                
+# "VIC_RACE" "X_COORD_CD" "Y_COORD_CD" "Latitude" "Longitude" "Lon_Lat" 
+
+```
+
+## ANALYSIS AND PLOTS
+```{r}
+
+# Selection all columns important to our Analysis 
+
+# Data Description 
+
+# List of every shooting incident that occurred in NYC going back to 2006 through the end of the previous calendar year. 
+# This is a breakdown of every shooting incident that occurred in NYC.
+
+# INCIDENT_KEY              => An incident represents a shooting 
+# OCCUR_DATE                => The Date, the shooting occured 
+# OCCUR_TIME                => The Time, the Shooting Occrured 
+# BORO                      => Borough in which the shooting occured
+# STATISTICAL_MURDER_FLAG   => If Incident resulted in a Homocide or not
+# PERP_AGE_GROUP            => Perpetrator Age group 
+# PERP_SEX                  => Perpetrator Sex
+# PERP_RACE                 => Perpetrator Race
+# VIC_AGE_GROUP             => Victim Age Group 
+# VIC_SEX                   => Victim Sex
+# VIC_RACE                  => Victim Race 
+
+selected_data <- project_data %>%
+  select("INCIDENT_KEY", "OCCUR_DATE", "STATISTICAL_MURDER_FLAG", "OCCUR_TIME", "BORO", "PERP_AGE_GROUP", "PERP_SEX", "PERP_RACE", "VIC_AGE_GROUP", "VIC_SEX", "VIC_RACE")
+ 
+
+# Rename INCIDENT_KEY to EVENT
+# Set EVENT column to 1 for all rows
+selected_data <- selected_data %>%
+  rename(EVENT = INCIDENT_KEY) %>%  
+  mutate(EVENT = 1)                
+
+# Transform Temporal Columns (OCCUR_DATE and OCCUR_TIME)
+# Convert OCCUR_DATE to Date format
+# Convert OCCUR_TIME to Time format
+
+selected_data <- selected_data %>%
+  mutate(
+    OCCUR_DATE = mdy(OCCUR_DATE),  
+    OCCUR_TIME = hms(OCCUR_TIME)   
+  )
+
+# Transform Categorical Columns
+# Convert STATISTICAL_MURDER_FLAG to numeric
+# Convert listed columns to factors
+
+selected_data <- selected_data %>%
+  mutate(
+    STATISTICAL_MURDER_FLAG = as.logical(STATISTICAL_MURDER_FLAG)
+  ) %>%
+  mutate(across(
+    c(PERP_AGE_GROUP, PERP_SEX, PERP_RACE, VIC_AGE_GROUP, VIC_SEX, VIC_RACE), 
+    as.factor  
+  ))
+
+
+# Remove Rows with Missing Values (NA)
+# Remove Rows with Empty values 
+# Remove Rows with Value (null)
+# Remove Rows with value "UNKNOWN"
+
+head(selected_data)
+
+columns_to_clean <- c("PERP_AGE_GROUP", "PERP_SEX", "PERP_RACE", "VIC_AGE_GROUP", "VIC_SEX", "VIC_RACE")
+  
+data_sans_vide <- selected_data %>%
+  filter(if_all(all_of(columns_to_clean),
+    ~ !is.na(.) & . != "(null)" & . != "UNKNOWN" & . != ""))
+
+# Verifying if the cleaning has been successful 
+
+sapply(columns_to_clean, function(col) {
+  any(data_sans_vide[[col]] %in% c("(null)", "UNKNOWN", ""))
+})
+
+
+# Observation: The total observations of the data went from 28562 to 15481
+# I decided to Keep it but wont be using it to do my Analysis
+# Might compare results using both data 
+
+```
+
+```{r}
+# Analysis of Data 
+# using selected_data 
+
+# Would Like to see visualization of a summary of all incidents in each borough
+
+
+selected_data %>%
+  ggplot(aes(x = BORO, fill = BORO)) +
+  geom_bar() + 
+  labs(title = "Total of Shooting Incidents in New York City per Borough", 
+       subtitle = "2006 - 2021", 
+       x = "Boroughs", 
+       y = "Total Shooting Incidents", 
+       caption = "Data Source: https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD") + 
+  theme_minimal() +  # Use a clean theme
+  theme(
+    plot.subtitle = element_text(hjust = 0.5),  
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),   
+    legend.position = "none"                                           
+  )
+
+
+```
+
+```{r}
+# Would like to see how many incidents has happened per year, per Borough, per victim sex 
+# Getting the data ready 
+
+petit <- selected_data %>%
+  select(OCCUR_DATE, BORO, VIC_SEX) %>%  
+  mutate(month = month(OCCUR_DATE)) 
+
+summary(petit)
+head(petit)
+
+# Plotting 
+
+petit %>%
+ggplot(aes(x = month, fill = VIC_SEX)) +
+  geom_bar(position = "dodge") + 
+  scale_x_continuous(breaks = 1:12,
+  labels = c("Jan", "Feb", "Mar","Apr","May","Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  labs(
+    title = "Distribution of Incidents by Months",
+    x = "Month",
+    y = "Number of Incidents",
+    fill = "Sex of Victims"
+  ) +
+  theme_minimal()  
+```
+
+
+```{r}
+# I'm from Brooklyn, so My bias is clear. I want to understand what's going in Brooklyn data. 
+
+brooklyn_data <- selected_data %>%
+  filter(BORO == "BROOKLYN")
+
+brooklyn_data <- brooklyn_data %>% 
+  mutate(
+    month = month (OCCUR_DATE, label = TRUE, abbr = TRUE),
+    year = year(OCCUR_DATE)
+  )
+
+parmoi <- brooklyn_data %>%
+  group_by(month) %>%
+  summarize(conter = n())
+
+print(parmoi)
+
+# Let's see if Brooklyn follows the trends of the most incidents per months as the entire data 
+
+ggplot(brooklyn_data, aes(x = month)) +
+  geom_bar(fill = "red") +
+  labs(
+    title = "Incidents in Brooklyn by Month",
+    x = "Month",
+    y = "Number of Incidents"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+parsex <- brooklyn_data %>%
+  group_by(VIC_SEX) %>%
+  summarize(incident_count = n())
+
+ggplot(brooklyn_data, aes(x = VIC_SEX, fill = VIC_SEX)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Incidents in Brooklyn by Victim Sex",
+    x = "Victim Sex",
+    y = "Number of Incidents"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# Let create a logistic regression model to predict how often a for shootings can be deadly
+
+# A logistic regression model for fatal shootings
+creation_de_model <- selected_data %>%
+  mutate(FATAL = as.numeric(STATISTICAL_MURDER_FLAG))
+
+# Splitting data into training and testing sets
+set.seed(300)
+train_index <- createDataPartition(creation_de_model$FATAL, p = 0.9, list = FALSE)
+train_data <- creation_de_model[train_index, ]
+test_data <- creation_de_model[-train_index, ]
+
+# Building logistic regression model with FATAL, VIC_AGE_GROUP, VIC_RACE, 
+autre <- glm(FATAL ~ BORO + VIC_AGE_GROUP + VIC_RACE, data = train_data, family = "binomial")
+
+# Summarize of the model
+summary(autre)
+
+# Let's make a prediction with our model 
+predictions <- predict(autre, test_data, type="response")
+
+# When higher than 0.5 then it's fatal incident, lower or equal to 0.5 non fatal incident
+encore_predictions <- ifelse(predictions > 0.5, 1, 0) 
+
+# Let's see the performance of the model 
+confusionMatrix(as.factor(encore_predictions), as.factor(test_data$FATAL))
+
+test_data$predicted_prob <- predictions
+
+# Plot the distribution
+ggplot(test_data, aes(x = predicted_prob, fill = as.factor(FATAL))) +
+  geom_histogram(binwidth = 0.3, alpha = 0.5, position = "identity") +
+  labs(title = "Distribution of Predicted Probabilities",
+       x = "Predicted Probability",
+       y = "Count",
+       fill = "Actual Outcome") +
+  theme_minimal()
+```
+
+
+## CONCLUSION 
+ We tried in this analysis to understand what happens in the data by borough and we noticed that despite whatever borough we take, the number of incidents are really high in the month of July and August. That's where my first bias occured by trying to figure out the trends in Brooklyn. We discovered that most of the victims where male and the data in Brooklyn mirror the entire data of New York City. We went on, trying to create a logistic regression to understand how often shooting can be deadly. With the column of STATISTICAL_MURDER_FLAG, that we converted in numeric 1 and 0, we build a model that can predict the probability of an actual fatal shooting occuring. We finalize by graphing the actual outcome. The last graph is showing our distribution plot.  
