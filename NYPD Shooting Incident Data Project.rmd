@@ -26,14 +26,13 @@ library(tidyverse)
 library(lubridate)
 library(ggplot2)
 library(caret)
-install.packages("readr")
-library(readr)
 ```
 
 ## EXTRACTING THE RAW DATA 
 ```{r}
 # Download data
 # Data Source from "https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic/resource/c564b578-fd8a-4005-8365-34150d306cc4"
+# Data source from data.gov
 
 project_data <- read.csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD")
 head(project_data)
@@ -55,6 +54,7 @@ print(project_datacol)
 # "VIC_RACE" "X_COORD_CD" "Y_COORD_CD" "Latitude" "Longitude" "Lon_Lat" 
 
 ```
+## Statements of the question of interest
 
 ## In this report, We want to know which Borough has the most Shooting Incidents, Then will breakdown this per year, per Borough and per victim sex. 
 ## This will help us Understand the incidents Trends better. 
