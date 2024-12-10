@@ -16,6 +16,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
+## To be able to have great tidy data and very clean plots, we need to download important R Packages for our Analysis
 
 ## DOWNLOADING LIBRARIES
 ```{r}
@@ -52,6 +53,11 @@ print(project_datacol)
 # "VIC_RACE" "X_COORD_CD" "Y_COORD_CD" "Latitude" "Longitude" "Lon_Lat" 
 
 ```
+
+## In this report, We want to know which Borough has the most Shooting Incidents, Then will breakdown this per year, per Borough and per victim sex. 
+## This will help us Understand the incidents Trends better. 
+## For living and Being from Brooklyn, I would like to Analyze the data to understand further in which months the Incidents happen the most. 
+## We will Then Build a logistic regression model to predict the probability of a shooting incident being fatal. 
 
 ## ANALYSIS AND PLOTS
 ```{r}
