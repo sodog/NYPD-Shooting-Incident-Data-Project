@@ -26,6 +26,8 @@ library(tidyverse)
 library(lubridate)
 library(ggplot2)
 library(caret)
+install.packages("readr")
+library(readr)
 ```
 
 ## EXTRACTING THE RAW DATA 
